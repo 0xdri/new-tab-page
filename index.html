@@ -24,6 +24,10 @@
 		<!--custom file input button style-->
 		<script type="text/javascript" src="js/bootstrap-filestyle.js"> </script>
 
+		<!--display popup easy-->
+		<script type="text/javascript" src="js/jquery.popupoverlay.js"> </script>
+
+
 		<script>		 
 
 		//store the value of the csv file into local storage for future use
@@ -42,17 +46,23 @@
 			return jsonData;
 		}
 
-		
-		function displayData(data)
+		function displayDebugData(data)
 		{
-			//row csv
-			$("#unparsed").val(data);
 
-			//csv parsed json (string)
+			 //row csv
+			 $("#unparsed").val(data);
+
+			 //csv parsed json (string)
+			 var jsonData = parseData(data);
+			 $("#parsed").val(jsonData);
+
+		}
+
+		//create html table from json array
+		function loadDataIntoTable(data)
+		{
 			var jsonData = parseData(data);
-			$("#parsed").val(jsonData);
-			
-			//html table
+
 			//var html = generateTable(JSON.parse(jsonData));
 			var html = htmlTableFromJsonArray(JSON.parse(jsonData));
 
@@ -60,7 +70,7 @@
 		}
 
 
-		//store the selected file into local storage
+		//store the file selected by button into local storage
 		function watchInputButton()
 		{
 			//watch for input field changes
@@ -75,15 +85,14 @@
 			    {
 			        var text = reader.result;
 			        storage.setItem(key,text);
-			      
-			        displayData(text);
+
+					loadDataIntoTable(text);
 			    };
 			    
 			    //start the reading
 			    reader.readAsText(file);
 			});
 			
-			//alert("file got");
 		}
 
 
@@ -176,20 +185,54 @@
 		
 
 
-         $(document).ready(function()
-         {
-         	//check if data is already in local storage, if not show input.
-			if(storage.getItem(key)) 
+        $(document).ready(function()
+        {
+			//check if data is already in local storage, if not show input.
+			if(storage.getItem(key))
 			{
 				//$("#file").hide();
-				
+
 				var data = storage.getItem(key);
-				displayData(data);
+				loadDataIntoTable(data);
+
+				$(document).on("contextmenu", "td", function()
+				{
+					var html = $(this).html();
+
+					$('#editing_popup > #link').html('link : ' + html);
+
+					$('#editing_popup').popup('show');
+
+					return false;
+				});
+
+				/*
+				$('td').mousedown(function(event)
+				{
+					switch (event.which)
+					{
+						case 1: break; //Left Mouse button pressed
+						case 2: break; //Middle Mouse button pressed
+						case 3:  //Right Mouse button pressed
+						{
+							//alert('3');
+							//show edit window
+							$('#editing_popup').popup();
+
+							break;
+						}
+						default: alert('You have a strange Mouse!');
+					}
+				});
+				*/
 			}
 			
-			watchInputButton();	
-				
-         });
+			watchInputButton();
+
+			// Initialize the plugin
+			$('#editing_popup').popup();
+
+		});
 
 
 		</script>
@@ -200,21 +243,33 @@
     </head>
     
     
-    <body class='loading'>
+    <body>
 
 
+		<!-- Add content to the popup -->
+		<div id="editing_popup">
 
-			<!--
-			<div id = 'raw'>test</div>
- 			<textarea id="unparsed"></textarea>
-  			<textarea id="parsed"></textarea>-->
+			<p id='displayName'>displayName</p>
+			<p id='link'>link</p>
+			<p id='image'>image</p>
 
-  			<table></table>
+			<!-- button to close the popup -->
+			<button class="editing_popup_close">Close</button>
 
-            <footer>
-				<!--<input type='file' id='file' value='update'/>-->
-				<input type="file" id='file' class="filestyle" data-classButton="btn btn-primary" data-input="false" data-classIcon="icon-plus" data-buttonText="update from csv file">
-			</footer>
+		</div>
+
+
+		<!--
+		<div id = 'raw'>test</div>
+		<textarea id="unparsed"></textarea>
+		<textarea id="parsed"></textarea>-->
+
+		<table></table>
+
+		<footer>
+			<!--<input type='file' id='file' value='update'/>-->
+			<input type="file" id='file' class="filestyle" data-classButton="btn btn-primary" data-input="false" data-classIcon="icon-plus" data-buttonText="update from csv file">
+		</footer>
 
 
         

@@ -44,13 +44,16 @@
 
 td
 {
-    width: 50px;
-    height: 30px;
-    padding: 20px;
+    width: 80px;
+    height: 50px;
+    padding: 0px;
     margin: 0px;
     background-color: gray;
     background-repeat: no-repeat;
-    background-size: 100%;
+    background-size: contain;
+    background-clip: border-box;
+    background-position: center center;
+    cursor: pointer;
 }
 
 td:hover
@@ -60,7 +63,24 @@ td:hover
 
 td a { display: block; margin: 0px; padding: 0px; }
 
+#editing_popup
+{
+    visibility: hidden;
 
+    max-width: 44em;
+    opacity: 1;
+    display: inline-block;
+    outline: medium none;
+    text-align: left;
+    position: relative;
+    vertical-align: middle;
+
+    padding: 20px;
+    background-color: #F5F5F5;
+    border: 1px solid #E3E3E3;
+    border-radius: 4px;
+
+}
 html, body
 {
     display: block;
