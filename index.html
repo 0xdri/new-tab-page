@@ -28,6 +28,7 @@
 		<script type="text/javascript" src="js/jquery.popupoverlay.js"> </script>
 
 
+
 		<script>		 
 
 		//store the value of the csv file into local storage for future use
@@ -74,8 +75,8 @@
 		//I. Parse the csv to javascript array
 		function parseCsvDataToArray(csvData)
 		{
-			console.log('parseCsvDataToArray csvData');
-			console.log(csvData);
+			//console.log('parseCsvDataToArray csvData');
+			//console.log(csvData);
 
 			var rawDataArray = $.csv.toArrays(csvData, {separator : ";"}); //toObjects functions works better with sites-header-row
 			//var parsed = Papa.parse(data, {header: false});
@@ -138,8 +139,8 @@
 			}
 			*/
 
-			console.log('parseCsvDataToArray formalizedDataArray');
-			console.log(formalizedDataArray);
+			//console.log('parseCsvDataToArray formalizedDataArray');
+			//console.log(formalizedDataArray);
 
 			return formalizedDataArray;
 		}
@@ -160,23 +161,24 @@
 
 		function loadDataIntoTable(dataArray)
 		{
-			console.log('loadDataIntoTable');
-			console.log(dataArray);
+			//console.log('loadDataIntoTable');
+			//console.log(dataArray);
 
 			var html = htmlTableFromDataArray(dataArray);
 
    			$('table').empty().html(html); //empty as a precaution if page is reloaded and old value was kept
 		}
 
+
 		//II. Create HTML table from javascript array
 		function htmlTableFromDataArray(dataArray)
 		{
-			console.log('htmlTableFromDataArray');
-			console.log(dataArray);
+			//console.log('htmlTableFromDataArray');
+			//console.log(dataArray);
 
 			var html = '';
 
-			/* for-in loops not appropriate for mixed arrays/objects
+			/* for-in loops are not appropriate for mixed arrays/objects
 			for(var row in dataArray) //row is an object containing categoryName and items keys
 			{
 				html += '<tr>\r\n';
@@ -197,7 +199,7 @@
 			{
 				html += '<tr>\r\n';
 
-				console.log('cycling through row '+row['categoryName']+ ' with index '+index);
+				//console.log('cycling through row '+row['categoryName']+ ' with index '+index);
 
 				row['items'].forEach(function(element, index2)
 				{
@@ -208,21 +210,44 @@
 
 			});
 
-
-
 			return html;
 		}
 
 
+		function getItem(rowIndex, columnIndex)
+		{
+			var dataString = storage.getItem(arrayDataKey);
+			var dataArray = JSON.parse(dataString);
 
+			return dataArray[rowIndex]['items'][columnIndex];
+		}
 
+		function modifyItem(rowIndex, columnIndex, displayName, url)
+		{
+			var originalDataString = storage.getItem(arrayDataKey);
+			var dataArray = JSON.parse(originalDataString);
 
+			var item = dataArray[rowIndex]['items'][columnIndex];
 
+			item['displayName'] = displayName;
+			item['url'] = url;
 
+			//save to local storage
+			var modifiedDataString = JSON.stringify(dataArray);
+			storage.setItem(arrayDataKey,modifiedDataString);
 
+			//reload
+			loadDataIntoTable(dataArray);
+		}
 
+		function updatePopup(displayName, url, imagePath, rowIndex, columnIndex)
+		{
+			$('#editing_popup > #displayName').val(displayName);
+			$('#editing_popup > #link').val(url);
+			$('#editing_popup > #imagePath').val(imagePath);
 
-
+			$('#editing_popup').data({'rowIndex' : rowIndex, 'columnIndex' : columnIndex});
+		}
 
 
         $(document).ready(function()
@@ -232,6 +257,29 @@
 			// Initialize the plugin
 			$('#editing_popup').popup();
 
+			$("#save-changes").click(function()
+			{
+				//grab the values from the pop-up
+				rowIndex =  $('#editing_popup').data('rowIndex');
+				columnIndex = $('#editing_popup').data('columnIndex');
+
+
+				displayName = $('#editing_popup #displayName').val();
+				url = $('#editing_popup #link').val();
+				imagePath = $('#editing_popup #imagePath').val();
+
+				console.log('displayName : ' + displayName);
+				console.log('url : ' + url);
+				console.log('imagePath : ' + imagePath);
+
+
+				modifyItem(rowIndex, columnIndex, displayName, url);
+
+				//close
+				$('#editing_popup').popup('hide');
+			});
+
+
 			//check if data is already in local storage
 			if(storage.getItem(arrayDataKey))
 			{
@@ -239,7 +287,7 @@
 
 				var dataString = storage.getItem(arrayDataKey);
 
-				console.log('file is present : ' + dataString);
+				//console.log('file is present : ' + dataString);
 
 				//var dataArray = JSON.parse("[" + dataString + "]");
 				var dataArray = JSON.parse(dataString);
@@ -247,14 +295,34 @@
 				loadDataIntoTable(dataArray);
 
 				//handle right click on cells
-				$(document).on("contextmenu", "td", function()
+				$(document).on('contextmenu', 'td', function()
 				{
-					var url = $(this).html();
 
-					$('#editing_popup > #link').html('link : ' + url);
+					//0. grab the values from the clicked cell
 
+					//Way 1 : read the td values
+					//var displayName = '';
+					//var url = $(this).children('a').attr('href');
+					//var imagePath = '';
+
+
+					//Way 2 : read tha data array
+					var rowIndex = $(this).parent()[0].rowIndex;
+					var columnIndex = $(this)[0].cellIndex;
+
+
+
+					var item = getItem(rowIndex, columnIndex);
+					var displayName = item['displayName'];
+					var url = item['url'];
+
+					//1.update the popup
+					updatePopup(displayName, url, imagePath, rowIndex, columnIndex);
+
+					//2. Show it
 					$('#editing_popup').popup('show');
 
+					//3. Disable right click ?
 					return false;
 				});
 
@@ -263,14 +331,12 @@
 			//if no file is found in local storage then ask the user to select one.
 			else
 			{
-				$('#file').click();
+				//$('#file').click(); //pas nécessairement on peut ajouter des tiles manually depuis le début.
+
+				//dans ce cas il faut créer la structure table de base (4x5 columns ?)
 			}
-			
-
-
 
 		});
-
 
 		</script>
 		
@@ -286,26 +352,29 @@
 		<!-- Add content to the popup -->
 		<div id="editing_popup">
 
-			<p id='displayName'>displayName</p>
-			<p id='link'>link</p>
-			<p id='image'>image</p>
+			displayName : <input type='text' id='displayName' name=''>
+			<br>
+			link : <input type='text' id='link' name=''>
+			<br>
+			image path : <input type='text' id='imagePath' name='image path'>
+			<br>
 
-			<!-- button to close the popup -->
-			<button class="editing_popup_close">Close</button>
+			<button class='editing_popup_close'>Close</button>
+			<button id='save-changes'>save changes</button>
 
 		</div>
 
 
 		<!--
 		<div id = 'raw'>test</div>
-		<textarea id="unparsed"></textarea>
-		<textarea id="parsed"></textarea>-->
+		<textarea id='unparsed'></textarea>
+		<textarea id='parsed'></textarea>-->
 
 		<table></table>
 
 		<footer>
 			<!--<input type='file' id='file' value='update'/>-->
-			<input type="file" id='file' class="filestyle" data-classButton="btn btn-primary" data-input="false" data-classIcon="icon-plus" data-buttonText="update from csv file">
+			<input type='file' id='file' class='filestyle' data-classButton='btn btn-primary' data-input='false' data-classIcon='icon-plus' data-buttonText='update from csv file'>
 		</footer>
 
 
