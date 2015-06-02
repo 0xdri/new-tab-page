@@ -41,6 +41,23 @@
     src:url('font/Brandon_thin.otf');
 }
 
+#editing_popup label
+{
+    display: table-cell;
+    white-space: nowrap
+}
+
+#editing_popup span
+{
+    display: table-cell;
+    width: 100%;
+    padding: 0px 10px;
+}
+
+#editing_popup input[type="text"]
+{
+    width: 100%;
+}
 
 td
 {
