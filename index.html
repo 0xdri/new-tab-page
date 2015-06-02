@@ -3,7 +3,7 @@
 
     <head>
         <meta charset="utf-8">
-        <meta name="description" content="new tab page" />
+        <meta name="description" content="new tab page"/>
         <meta name="viewport" content="initial-scale=1, width=device-width, maximum-scale=1, minimum-scale=1, user-scalable=no">
         
         <title>new Tab Page</title>
@@ -14,28 +14,34 @@
         <!--load jQuery-->
 		<!--<script src="http://code.jquery.com/jquery-git2.js"></script>-->
 		<!--<script src="http://code.jquery.com/jquery-2.1.4.js"></script>-->
-	    <script src="jquery-2.1.4.js"></script>
+	    <script src="js/jquery-2.1.4.js"></script>
 
 		<!--load the parser-->
   		<!--<script src="https://github.com/mholt/PapaParse/blob/master/papaparse.js"></script>-->
   		<!--<script src="papaparse.js"></script>-->
-		<script src="jquery.csv-0.71.js"></script>
+		<script src="js/jquery.csv-0.71.js"></script>
+
+		<!--custom file input button style-->
+		<script type="text/javascript" src="js/bootstrap-filestyle.js"> </script>
 
 		<script>		 
 
 		//store the value of the csv file into local storage for future use
 		var storage = localStorage;
-		var key = 'unparsed_text_file';
-		
-		//parse the file (extracted from local storage) and display it ni the textareas
-		
+		var key = 'unparsed_csv_file';
+
+
+		//parse the csv data (extracted from local storage) to json string
 		function parseData(data)
 		{
-		    var parsed = $.csv.toArrays(data, {separator : ";"}); //toObjects works better with sites-header-row
+		    var parsed = $.csv.toArrays(data, {separator : ";"}); //toObjects functions works better with sites-header-row
 		    //var parsed = Papa.parse(data, {header: false});
 		  
-		    return jsonData = JSON.stringify(parsed, null, 2);
+		    var jsonData = JSON.stringify(parsed, null, 2); //make it displayable
+
+			return jsonData;
 		}
+
 		
 		function displayData(data)
 		{
@@ -47,12 +53,11 @@
 			$("#parsed").val(jsonData);
 			
 			//html table
-			var html = generateTable(JSON.parse(jsonData));
-   			$('#table').empty();
-    		$('#table').html(html);
+			//var html = generateTable(JSON.parse(jsonData));
+			var html = htmlTableFromJsonArray(JSON.parse(jsonData));
 
+   			$('table').empty().html(html); //empty as a precaution if page is reloaded and old value was kept
 		}
-
 
 
 		//store the selected file into local storage
@@ -79,62 +84,94 @@
 			});
 			
 			//alert("file got");
-			
 		}
 
 
+		function htmlTableFromJsonArray(jsonArray)
+		{
+			var html = '';
+
+			for(var row in jsonArray)
+			{
+				html += '<tr>\r\n';
+
+				for(var item in jsonArray[row])
+				{
+					//each entry is composed of the name followed by url
+					var entry = jsonArray[row][item];
+					var splittedEntry = entry.split(" ");
+					var entryName = splittedEntry[0];
+					var entryURL= splittedEntry[1];
+
+					html += '<td style="background-image:url(img/' + entryName + '-tile.png);"><a href="' + entryURL + '">' + entryName +'</a></td>\r\n';
+				}
+
+				html += '</tr>\r\n';
+			}
+
+			return html;
+		}
 
 	
-		// build HTML table data from an array (one or two dimensional)
+		//build HTML table data from an array (one or two dimensional)
 		function generateTable(data)
 		{
-		var html = '';
+			var html = '';
 
-		if(typeof(data[0]) === 'undefined')
-		{
-		  return null;
-		}
-
-		if(data[0].constructor === String)
-		{
-			//alert("data is a string");
-
-		  html += '<tr>\r\n';
-		  for(var item in data) {
-			html += '<td>' + data[item] + '</td>\r\n';
-		  }
-		  html += '</tr>\r\n';
-
-		}
-
-		if(data[0].constructor === Array)
-		{
-			//alert("data is an array");
-
-		  for(var row in data) {
-			html += '<tr>\r\n';
-			for(var item in data[row]) {
-			  html += '<td>' + data[row][item] + '</td>\r\n';
+			if(typeof(data[0]) === 'undefined')
+			{
+				return null;
 			}
-			html += '</tr>\r\n';
-		  }
 
-		}
+			if(data[0].constructor === String)
+			{
+				//alert("data is a string");
 
-		if(data[0].constructor === Object)
-		{
-			//alert("data is objects");
+				html += '<tr>\r\n';
 
-		  for(var row in data) {
-			html += '<tr>\r\n';
-			for(var item in data[row]) {
-			  html += '<td>' + item + ':' + data[row][item] + '</td>\r\n';
+				for(var item in data)
+				{
+				  html += '<td>' + data[item] + '</td>\r\n';
+				}
+				html += '</tr>\r\n';
+
 			}
-			html += '</tr>\r\n';
-		  }
-		}
 
-		return html;
+			if(data[0].constructor === Array)
+			{
+				//alert("data is an array");
+
+				for(var row in data)
+				{
+					html += '<tr>\r\n';
+
+					for(var item in data[row])
+					{
+						html += '<td>' + data[row][item] + '</td>\r\n';
+					}
+
+					html += '</tr>\r\n';
+				}
+			}
+
+			if(data[0].constructor === Object)
+			{
+				//alert("data is objects");
+
+				for(var row in data)
+				{
+				html += '<tr>\r\n';
+
+					for(var item in data[row])
+				{
+					html += '<td>' + item + ':' + data[row][item] + '</td>\r\n';
+				}
+
+					html += '</tr>\r\n';
+				}
+			}
+
+			return html;
 		}
 		
 
@@ -164,21 +201,21 @@
     
     
     <body class='loading'>
-                     
 
-				
-			<input type="file" id="file" />
-			
+
+
+			<!--
 			<div id = 'raw'>test</div>
-
-
  			<textarea id="unparsed"></textarea>
-  			<textarea id="parsed"></textarea>
-  
-  			<div id='table'>test2</div>
-  			
-            <footer></footer>
-                
+  			<textarea id="parsed"></textarea>-->
+
+  			<table></table>
+
+            <footer>
+				<!--<input type='file' id='file' value='update'/>-->
+				<input type="file" id='file' class="filestyle" data-classButton="btn btn-primary" data-input="false" data-classIcon="icon-plus" data-buttonText="update from csv file">
+			</footer>
+
 
         
     </body> 
