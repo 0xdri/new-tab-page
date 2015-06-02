@@ -32,205 +32,242 @@
 
 		//store the value of the csv file into local storage for future use
 		var storage = localStorage;
-		var key = 'unparsed_csv_file';
+		//var csvDataKey = 'unparsed_csv_data';
+		var arrayDataKey = 'formalized_data_array';
 
 
-		//parse the csv data (extracted from local storage) to json string
-		function parseData(data)
-		{
-		    var parsed = $.csv.toArrays(data, {separator : ";"}); //toObjects functions works better with sites-header-row
-		    //var parsed = Papa.parse(data, {header: false});
-		  
-		    var jsonData = JSON.stringify(parsed, null, 2); //make it displayable
-
-			return jsonData;
-		}
-
-		function displayDebugData(data)
-		{
-
-			 //row csv
-			 $("#unparsed").val(data);
-
-			 //csv parsed json (string)
-			 var jsonData = parseData(data);
-			 $("#parsed").val(jsonData);
-
-		}
-
-		//create html table from json array
-		function loadDataIntoTable(data)
-		{
-			var jsonData = parseData(data);
-
-			//var html = generateTable(JSON.parse(jsonData));
-			var html = htmlTableFromJsonArray(JSON.parse(jsonData));
-
-   			$('table').empty().html(html); //empty as a precaution if page is reloaded and old value was kept
-		}
 
 
-		//store the file selected by button into local storage
+
+
+
+
+		//O. store the file selected by button into local storage (as a stringified array)
 		function watchInputButton()
 		{
 			//watch for input field changes
 			$("#file").change(function()
 			{
-				//grab the selected file
-			    var file = $(this).eq(0)[0].files[0],
-			    reader = new FileReader();
-			    
-			    //function called when file has been loaded into the filereader
-			    reader.onload = function(e) 
-			    {
-			        var text = reader.result;
-			        storage.setItem(key,text);
+				//0. setup the vars used to access the csv data
+				var file = $(this).eq(0)[0].files[0],
+						reader = new FileReader();
 
-					loadDataIntoTable(text);
-			    };
-			    
-			    //start the reading
-			    reader.readAsText(file);
+				//2. function called when selected file has been loaded into the filereader
+				reader.onload = function(e)
+				{
+					var csvData = reader.result;
+					var dataArray = parseCsvDataToArray(csvData);
+
+					var dataString = JSON.stringify(dataArray);
+					storage.setItem(arrayDataKey,dataString);
+
+					loadDataIntoTable(dataArray);
+				};
+
+				//1. start the reading
+				reader.readAsText(file);
 			});
-			
+
 		}
 
 
-		function htmlTableFromJsonArray(jsonArray)
+		//I. Parse the csv to javascript array
+		function parseCsvDataToArray(csvData)
 		{
-			var html = '';
+			console.log('parseCsvDataToArray csvData');
+			console.log(csvData);
 
-			for(var row in jsonArray)
+			var rawDataArray = $.csv.toArrays(csvData, {separator : ";"}); //toObjects functions works better with sites-header-row
+			//var parsed = Papa.parse(data, {header: false});
+
+			//split the entry name and url into two separate keys
+
+			var formalizedDataArray = [];
+
+
+			rawDataArray.forEach(function(element, index)
 			{
-				html += '<tr>\r\n';
+				//console.log(entry);
 
-				for(var item in jsonArray[row])
+				formalizedDataArray[index] = {};
+
+				formalizedDataArray[index]['categoryName'] = String(index);
+
+				formalizedDataArray[index]['items']= [];
+
+
+				element.forEach(function(element2, index2)
 				{
-					//each entry is composed of the name followed by url
-					var entry = jsonArray[row][item];
+					//1. extract the name followed by url for each entry
+					var splittedEntry = element2.split(" ");
+					var entryName = splittedEntry[0];
+					var entryURL= splittedEntry[1];
+
+					//2. adds it to the formalized array
+
+					formalizedDataArray[index]['items'][index2] = {};
+
+					formalizedDataArray[index]['items'][index2]["displayName"] = entryName;
+					formalizedDataArray[index]['items'][index2]["url"] = entryURL;
+				});
+
+			});
+
+			/* for-in loops not appropriate for mixed arrays/objects
+			for(var row in rawDataArray)
+			{
+				formalizedDataArray[row] = [];
+
+				formalizedDataArray[row]['categoryName'] = String(row);
+
+				formalizedDataArray[row]['items']= [];
+
+				for(var item in row)
+				{
+					//1. extract the name followed by url for each entry
+					var entry = rawDataArray[row][item];
 					var splittedEntry = entry.split(" ");
 					var entryName = splittedEntry[0];
 					var entryURL= splittedEntry[1];
 
-					html += '<td style="background-image:url(img/' + entryName + '-tile.png);"><a href="' + entryURL + '">' + entryName +'</a></td>\r\n';
+					//2. adds it to the formalized array
+					formalizedDataArray[row]['items'][item] = [];
+					formalizedDataArray[row]['items'][item]["displayName"] = entryName;
+					formalizedDataArray[row]['items'][item]["url"] = entryURL;
 				}
-
-				html += '</tr>\r\n';
 			}
+			*/
 
-			return html;
+			console.log('parseCsvDataToArray formalizedDataArray');
+			console.log(formalizedDataArray);
+
+			return formalizedDataArray;
 		}
 
-	
-		//build HTML table data from an array (one or two dimensional)
-		function generateTable(data)
+
+
+		function displayDebugData(csvData)
 		{
+			 //row csv
+			 $("#unparsed").val(csvData);
+
+			 //csv parsed json (string)
+			 var dataArray = parseCsvDataToArray(csvData);
+			 var jsonString = JSON.stringify(dataArray, null, 2); //make it displayable
+			 $("#parsed").val(jsonString);
+		}
+
+
+		function loadDataIntoTable(dataArray)
+		{
+			console.log('loadDataIntoTable');
+			console.log(dataArray);
+
+			var html = htmlTableFromDataArray(dataArray);
+
+   			$('table').empty().html(html); //empty as a precaution if page is reloaded and old value was kept
+		}
+
+		//II. Create HTML table from javascript array
+		function htmlTableFromDataArray(dataArray)
+		{
+			console.log('htmlTableFromDataArray');
+			console.log(dataArray);
+
 			var html = '';
 
-			if(typeof(data[0]) === 'undefined')
+			/* for-in loops not appropriate for mixed arrays/objects
+			for(var row in dataArray) //row is an object containing categoryName and items keys
 			{
-				return null;
-			}
-
-			if(data[0].constructor === String)
-			{
-				//alert("data is a string");
-
 				html += '<tr>\r\n';
 
-				for(var item in data)
+				console.log('cycling through row '+row['categoryName']);
+
+				for(var item in row['items']) //item is an object containing displayName and url keys
 				{
-				  html += '<td>' + data[item] + '</td>\r\n';
+					html += '<td style="background-image:url(img/' + item["displayName"] + '-tile.png);"><a href="' + item["url"] + '">' + item["displayName"] +'</a></td>\r\n';
 				}
+
+				html += '</tr>\r\n';
+			}
+			*/
+
+
+			dataArray.forEach(function(row, index)
+			{
+				html += '<tr>\r\n';
+
+				console.log('cycling through row '+row['categoryName']+ ' with index '+index);
+
+				row['items'].forEach(function(element, index2)
+				{
+					html += '<td style="background-image:url(img/' + element["displayName"] + '-tile.png);"><a href="' + element["url"] + '">' + element["displayName"] +'</a></td>\r\n';
+				});
+
 				html += '</tr>\r\n';
 
-			}
+			});
 
-			if(data[0].constructor === Array)
-			{
-				//alert("data is an array");
 
-				for(var row in data)
-				{
-					html += '<tr>\r\n';
-
-					for(var item in data[row])
-					{
-						html += '<td>' + data[row][item] + '</td>\r\n';
-					}
-
-					html += '</tr>\r\n';
-				}
-			}
-
-			if(data[0].constructor === Object)
-			{
-				//alert("data is objects");
-
-				for(var row in data)
-				{
-				html += '<tr>\r\n';
-
-					for(var item in data[row])
-				{
-					html += '<td>' + item + ':' + data[row][item] + '</td>\r\n';
-				}
-
-					html += '</tr>\r\n';
-				}
-			}
 
 			return html;
 		}
-		
+
+
+
+
+
+
+
+
+
+
+
 
 
         $(document).ready(function()
         {
-			//check if data is already in local storage, if not show input.
-			if(storage.getItem(key))
+			watchInputButton();
+
+			// Initialize the plugin
+			$('#editing_popup').popup();
+
+			//check if data is already in local storage
+			if(storage.getItem(arrayDataKey))
 			{
 				//$("#file").hide();
 
-				var data = storage.getItem(key);
-				loadDataIntoTable(data);
+				var dataString = storage.getItem(arrayDataKey);
 
+				console.log('file is present : ' + dataString);
+
+				//var dataArray = JSON.parse("[" + dataString + "]");
+				var dataArray = JSON.parse(dataString);
+
+				loadDataIntoTable(dataArray);
+
+				//handle right click on cells
 				$(document).on("contextmenu", "td", function()
 				{
-					var html = $(this).html();
+					var url = $(this).html();
 
-					$('#editing_popup > #link').html('link : ' + html);
+					$('#editing_popup > #link').html('link : ' + url);
 
 					$('#editing_popup').popup('show');
 
 					return false;
 				});
 
-				/*
-				$('td').mousedown(function(event)
-				{
-					switch (event.which)
-					{
-						case 1: break; //Left Mouse button pressed
-						case 2: break; //Middle Mouse button pressed
-						case 3:  //Right Mouse button pressed
-						{
-							//alert('3');
-							//show edit window
-							$('#editing_popup').popup();
+			}
 
-							break;
-						}
-						default: alert('You have a strange Mouse!');
-					}
-				});
-				*/
+			//if no file is found in local storage then ask the user to select one.
+			else
+			{
+				$('#file').click();
 			}
 			
-			watchInputButton();
 
-			// Initialize the plugin
-			$('#editing_popup').popup();
+
 
 		});
 

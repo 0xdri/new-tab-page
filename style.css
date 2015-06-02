@@ -56,6 +56,11 @@ td
     cursor: pointer;
 }
 
+td .header
+{
+    background-color: darkgray;
+}
+
 td:hover
 {
     background-color: lightgray;
