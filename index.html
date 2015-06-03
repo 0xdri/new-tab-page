@@ -29,6 +29,7 @@
 
 
 
+
 		<script>		 
 
 		//store the value of the csv file into local storage for future use
@@ -110,6 +111,7 @@
 
 					formalizedDataArray[index]['items'][index2]["displayName"] = entryName;
 					formalizedDataArray[index]['items'][index2]["url"] = entryURL;
+					formalizedDataArray[index]['items'][index2]["imagePath"] = 'img/' + entryName + '-tile.png'; //try to load default image
 				});
 
 			});
@@ -159,6 +161,9 @@
 		}
 
 
+
+
+
 		function loadDataIntoTable(dataArray)
 		{
 			//console.log('loadDataIntoTable');
@@ -203,7 +208,10 @@
 
 				row['items'].forEach(function(element, index2)
 				{
-					html += '<td style="background-image:url(img/' + element["displayName"] + '-tile.png);"><a href="' + element["url"] + '">' + element["displayName"] +'</a></td>\r\n';
+
+					//if the image path is set, set it as the backgorund image, if not show text for url
+					if (element['imagePath'] != '') html += '<td style="background-image:url(img/' + element["displayName"] + '-tile.png);"><a href="' + element["url"] + '"></a></td>\r\n';
+					else html += '<td><a href="' + element["url"] + '">' + element["displayName"] +'</a></td>\r\n';
 				});
 
 				html += '</tr>\r\n';
@@ -222,7 +230,7 @@
 			return dataArray[rowIndex]['items'][columnIndex];
 		}
 
-		function modifyItem(rowIndex, columnIndex, displayName, url)
+		function modifyItem(rowIndex, columnIndex, displayName, url, imagePath)
 		{
 			var originalDataString = storage.getItem(arrayDataKey);
 			var dataArray = JSON.parse(originalDataString);
@@ -231,6 +239,8 @@
 
 			item['displayName'] = displayName;
 			item['url'] = url;
+			item['imagePath'] = imagePath;
+
 
 			//save to local storage
 			var modifiedDataString = JSON.stringify(dataArray);
@@ -260,20 +270,20 @@
 			$("#save-changes").click(function()
 			{
 				//grab the values from the pop-up
-				rowIndex =  $('#editing_popup').data('rowIndex');
-				columnIndex = $('#editing_popup').data('columnIndex');
+				var rowIndex =  $('#editing_popup').data('rowIndex');
+				var columnIndex = $('#editing_popup').data('columnIndex');
 
 
-				displayName = $('#editing_popup #displayName').val();
-				url = $('#editing_popup #link').val();
-				imagePath = $('#editing_popup #imagePath').val();
+				var displayName = $('#editing_popup #displayName').val();
+				var url = $('#editing_popup #link').val();
+				var imagePath = $('#editing_popup #imagePath').val();
 
 				console.log('displayName : ' + displayName);
 				console.log('url : ' + url);
 				console.log('imagePath : ' + imagePath);
 
 
-				modifyItem(rowIndex, columnIndex, displayName, url);
+				modifyItem(rowIndex, columnIndex, displayName, url, imagePath);
 
 				//close
 				$('#editing_popup').popup('hide');
@@ -299,22 +309,13 @@
 				{
 
 					//0. grab the values from the clicked cell
-
-					//Way 1 : read the td values
-					//var displayName = '';
-					//var url = $(this).children('a').attr('href');
-					//var imagePath = '';
-
-
-					//Way 2 : read tha data array
 					var rowIndex = $(this).parent()[0].rowIndex;
 					var columnIndex = $(this)[0].cellIndex;
-
-
 
 					var item = getItem(rowIndex, columnIndex);
 					var displayName = item['displayName'];
 					var url = item['url'];
+					var imagePath = item['imagePath'];
 
 					//1.update the popup
 					updatePopup(displayName, url, imagePath, rowIndex, columnIndex);
